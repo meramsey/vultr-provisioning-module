@@ -1,11 +1,12 @@
 {
-    "name": "whmcs/provisioning-module-sample",
-    "description": "Sample Provisioning Module for WHMCS Billing Automation Platform",
+    "name": "whmcs/vultr-provisioning-module-sample",
+    "description": "Vultr Provisioning Module for WHMCS Billing Automation Platform",
     "keywords": [
         "whmcs",
         "web host automation platform",
         "provisioning module",
-        "server module"
+        "server module",
+        "vult"
     ],
     "homepage": "http://www.whmcs.com/",
     "license": "MIT",
