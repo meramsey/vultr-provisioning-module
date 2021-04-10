@@ -39,6 +39,8 @@ if (!defined("WHMCS")) {
 //
 // Also, perform any initialization required by the service's library.
 
+require_once __DIR__ . 'loader.php';
+
 /**
  * Define module related meta data.
  *
@@ -52,13 +54,13 @@ if (!defined("WHMCS")) {
 function vultr_MetaData()
 {
     return array(
-        'DisplayName' => 'Demo Provisioning Module',
+        'DisplayName' => 'Vultr Provisioning Module',
         'APIVersion' => '1.1', // Use API Version 1.1
-        'RequiresServer' => true, // Set true if module requires a server to work
-        'DefaultNonSSLPort' => '1111', // Default Non-SSL Connection Port
-        'DefaultSSLPort' => '1112', // Default SSL Connection Port
-        'ServiceSingleSignOnLabel' => 'Login to Panel as User',
-        'AdminSingleSignOnLabel' => 'Login to Panel as Admin',
+        //'RequiresServer' => true, // Set true if module requires a server to work
+        //'DefaultNonSSLPort' => '1111', // Default Non-SSL Connection Port
+        //'DefaultSSLPort' => '1112', // Default SSL Connection Port
+        //'ServiceSingleSignOnLabel' => 'Login to Panel as User',
+        //'AdminSingleSignOnLabel' => 'Login to Panel as Admin',
     );
 }
 
@@ -85,52 +87,10 @@ function vultr_MetaData()
  *
  * @return array
  */
-function vultr_ConfigOptions()
+function vultr_ConfigOptions($params)
 {
-    return array(
-        // a text field type allows for single line text input
-        'Text Field' => array(
-            'Type' => 'text',
-            'Size' => '25',
-            'Default' => '1024',
-            'Description' => 'Enter in megabytes',
-        ),
-        // a password field type allows for masked text input
-        'Password Field' => array(
-            'Type' => 'password',
-            'Size' => '25',
-            'Default' => '',
-            'Description' => 'Enter secret value here',
-        ),
-        // the yesno field type displays a single checkbox option
-        'Checkbox Field' => array(
-            'Type' => 'yesno',
-            'Description' => 'Tick to enable',
-        ),
-        // the dropdown field type renders a select menu of options
-        'Dropdown Field' => array(
-            'Type' => 'dropdown',
-            'Options' => array(
-                'option1' => 'Display Value 1',
-                'option2' => 'Second Option',
-                'option3' => 'Another Option',
-            ),
-            'Description' => 'Choose one',
-        ),
-        // the radio field type displays a series of radio button options
-        'Radio Field' => array(
-            'Type' => 'radio',
-            'Options' => 'First Option,Second Option,Third Option',
-            'Description' => 'Choose your option!',
-        ),
-        // the textarea field type allows for multi-line text input
-        'Textarea Field' => array(
-            'Type' => 'textarea',
-            'Rows' => '3',
-            'Cols' => '60',
-            'Description' => 'Freeform multi-line text input field',
-        ),
-    );
+    $vultr = new Vultr($params);
+    return $vultr->getConfigOptions();
 }
 
 /**
@@ -168,6 +128,8 @@ function vultr_CreateAccount(array $params)
         //     ...
         // )
         // ```
+        $vultr = new Vultr($params);
+        $vultr->createAccount();
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
@@ -202,6 +164,8 @@ function vultr_SuspendAccount(array $params)
     try {
         // Call the service's suspend function, using the values provided by
         // WHMCS in `$params`.
+        $vultr = new Vultr($params);
+        $vultr->suspendAccount();
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
@@ -236,6 +200,8 @@ function vultr_UnsuspendAccount(array $params)
     try {
         // Call the service's unsuspend function, using the values provided by
         // WHMCS in `$params`.
+        $vultr = new Vultr($params);
+        $vultr->unsuspendAccount();
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
@@ -269,6 +235,8 @@ function vultr_TerminateAccount(array $params)
     try {
         // Call the service's terminate function, using the values provided by
         // WHMCS in `$params`.
+        $vultr = new Vultr($params);
+        $vultr->terminateAccount();
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
@@ -315,6 +283,8 @@ function vultr_ChangePassword(array $params)
         //     'password' => 'The new service password',
         // )
         // ```
+        // not implemented yet
+        return 'success';
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
@@ -362,6 +332,8 @@ function vultr_ChangePackage(array $params)
         //     'configoption3' => 'Whether or not to enable FTP',
         // )
         // ```
+        $vultr = new Vultr($params);
+        $vultr->changePackage();
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
         logModuleCall(
@@ -395,12 +367,16 @@ function vultr_ChangePackage(array $params)
  *
  * @return array
  */
-function vultr_TestConnection(array $params)
+function vultr_TestConnection(array $params): array
 {
     try {
         // Call the service's connection test function.
-
-        $success = true;
+        $success = false;
+        $vultr = new Vultr($params);
+        $vultrAPI = $vultr->getConfigOptions();
+        if ($vultrAPI->checkConnection()) {
+            $success = true;
+        }
         $errorMsg = '';
     } catch (Exception $e) {
         // Record the error in WHMCS's module log.
@@ -421,164 +397,375 @@ function vultr_TestConnection(array $params)
         'error' => $errorMsg,
     );
 }
+//
+///**
+// * Additional actions an admin user can invoke.
+// *
+// * Define additional actions that an admin user can perform for an
+// * instance of a product/service.
+// *
+// * @see vultr_buttonOneFunction()
+// *
+// * @return array
+// */
+//function vultr_AdminCustomButtonArray()
+//{
+//    return array(
+//        "Button 1 Display Value" => "buttonOneFunction",
+//        "Button 2 Display Value" => "buttonTwoFunction",
+//    );
+//}
+//
+///**
+// * Additional actions a client user can invoke.
+// *
+// * Define additional actions a client user can perform for an instance of a
+// * product/service.
+// *
+// * Any actions you define here will be automatically displayed in the available
+// * list of actions within the client area.
+// *
+// * @return array
+// */
+//function vultr_ClientAreaCustomButtonArray()
+//{
+//    return array(
+//        "Action 1 Display Value" => "actionOneFunction",
+//        "Action 2 Display Value" => "actionTwoFunction",
+//    );
+//}
+//
+///**
+// * Custom function for performing an additional action.
+// *
+// * You can define an unlimited number of custom functions in this way.
+// *
+// * Similar to all other module call functions, they should either return
+// * 'success' or an error message to be displayed.
+// *
+// * @param array $params common module parameters
+// *
+// * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
+// * @see vultr_AdminCustomButtonArray()
+// *
+// * @return string "success" or an error message
+// */
+//function vultr_buttonOneFunction(array $params)
+//{
+//    try {
+//        // Call the service's function, using the values provided by WHMCS in
+//        // `$params`.
+//    } catch (Exception $e) {
+//        // Record the error in WHMCS's module log.
+//        logModuleCall(
+//            'vultr',
+//            __FUNCTION__,
+//            $params,
+//            $e->getMessage(),
+//            $e->getTraceAsString()
+//        );
+//
+//        return $e->getMessage();
+//    }
+//
+//    return 'success';
+//}
+//
+///**
+// * Custom function for performing an additional action.
+// *
+// * You can define an unlimited number of custom functions in this way.
+// *
+// * Similar to all other module call functions, they should either return
+// * 'success' or an error message to be displayed.
+// *
+// * @param array $params common module parameters
+// *
+// * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
+// * @see vultr_ClientAreaCustomButtonArray()
+// *
+// * @return string "success" or an error message
+// */
+//function vultr_actionOneFunction(array $params)
+//{
+//    try {
+//        // Call the service's function, using the values provided by WHMCS in
+//        // `$params`.
+//    } catch (Exception $e) {
+//        // Record the error in WHMCS's module log.
+//        logModuleCall(
+//            'vultr',
+//            __FUNCTION__,
+//            $params,
+//            $e->getMessage(),
+//            $e->getTraceAsString()
+//        );
+//
+//        return $e->getMessage();
+//    }
+//
+//    return 'success';
+//}
+//
+///**
+// * Admin services tab additional fields.
+// *
+// * Define additional rows and fields to be displayed in the admin area service
+// * information and management page within the clients profile.
+// *
+// * Supports an unlimited number of additional field labels and content of any
+// * type to output.
+// *
+// * @param array $params common module parameters
+// *
+// * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
+// * @see vultr_AdminServicesTabFieldsSave()
+// *
+// * @return array
+// */
+//function vultr_AdminServicesTabFields(array $params)
+//{
+//    try {
+//        // Call the service's function, using the values provided by WHMCS in
+//        // `$params`.
+//        $response = array();
+//
+//        // Return an array based on the function's response.
+//        return array(
+//            'Number of Apples' => (int) $response['numApples'],
+//            'Number of Oranges' => (int) $response['numOranges'],
+//            'Last Access Date' => date("Y-m-d H:i:s", $response['lastLoginTimestamp']),
+//            'Something Editable' => '<input type="hidden" name="vultr_original_uniquefieldname" '
+//                . 'value="' . htmlspecialchars($response['textvalue']) . '" />'
+//                . '<input type="text" name="vultr_uniquefieldname"'
+//                . 'value="' . htmlspecialchars($response['textvalue']) . '" />',
+//        );
+//    } catch (Exception $e) {
+//        // Record the error in WHMCS's module log.
+//        logModuleCall(
+//            'vultr',
+//            __FUNCTION__,
+//            $params,
+//            $e->getMessage(),
+//            $e->getTraceAsString()
+//        );
+//
+//        // In an error condition, simply return no additional fields to display.
+//    }
+//
+//    return array();
+//}
+//
+///**
+// * Execute actions upon save of an instance of a product/service.
+// *
+// * Use to perform any required actions upon the submission of the admin area
+// * product management form.
+// *
+// * It can also be used in conjunction with the AdminServicesTabFields function
+// * to handle values submitted in any custom fields which is demonstrated here.
+// *
+// * @param array $params common module parameters
+// *
+// * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
+// * @see vultr_AdminServicesTabFields()
+// */
+//function vultr_AdminServicesTabFieldsSave(array $params)
+//{
+//    // Fetch form submission variables.
+//    $originalFieldValue = isset($_REQUEST['vultr_original_uniquefieldname'])
+//        ? $_REQUEST['vultr_original_uniquefieldname']
+//        : '';
+//
+//    $newFieldValue = isset($_REQUEST['vultr_uniquefieldname'])
+//        ? $_REQUEST['vultr_uniquefieldname']
+//        : '';
+//
+//    // Look for a change in value to avoid making unnecessary service calls.
+//    if ($originalFieldValue != $newFieldValue) {
+//        try {
+//            // Call the service's function, using the values provided by WHMCS
+//            // in `$params`.
+//        } catch (Exception $e) {
+//            // Record the error in WHMCS's module log.
+//            logModuleCall(
+//                'vultr',
+//                __FUNCTION__,
+//                $params,
+//                $e->getMessage(),
+//                $e->getTraceAsString()
+//            );
+//
+//            // Otherwise, error conditions are not supported in this operation.
+//        }
+//    }
+//}
+//
+///**
+// * Perform single sign-on for a given instance of a product/service.
+// *
+// * Called when single sign-on is requested for an instance of a product/service.
+// *
+// * When successful, returns a URL to which the user should be redirected.
+// *
+// * @param array $params common module parameters
+// *
+// * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
+// *
+// * @return array
+// */
+//function vultr_ServiceSingleSignOn(array $params)
+//{
+//    try {
+//        // Call the service's single sign-on token retrieval function, using the
+//        // values provided by WHMCS in `$params`.
+//        $response = array();
+//
+//        return array(
+//            'success' => true,
+//            'redirectTo' => $response['redirectUrl'],
+//        );
+//    } catch (Exception $e) {
+//        // Record the error in WHMCS's module log.
+//        logModuleCall(
+//            'vultr',
+//            __FUNCTION__,
+//            $params,
+//            $e->getMessage(),
+//            $e->getTraceAsString()
+//        );
+//
+//        return array(
+//            'success' => false,
+//            'errorMsg' => $e->getMessage(),
+//        );
+//    }
+//}
+//
+///**
+// * Perform single sign-on for a server.
+// *
+// * Called when single sign-on is requested for a server assigned to the module.
+// *
+// * This differs from ServiceSingleSignOn in that it relates to a server
+// * instance within the admin area, as opposed to a single client instance of a
+// * product/service.
+// *
+// * When successful, returns a URL to which the user should be redirected to.
+// *
+// * @param array $params common module parameters
+// *
+// * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
+// *
+// * @return array
+// */
+//function vultr_AdminSingleSignOn(array $params)
+//{
+//    try {
+//        // Call the service's single sign-on admin token retrieval function,
+//        // using the values provided by WHMCS in `$params`.
+//        $response = array();
+//
+//        return array(
+//            'success' => true,
+//            'redirectTo' => $response['redirectUrl'],
+//        );
+//    } catch (Exception $e) {
+//        // Record the error in WHMCS's module log.
+//        logModuleCall(
+//            'vultr',
+//            __FUNCTION__,
+//            $params,
+//            $e->getMessage(),
+//            $e->getTraceAsString()
+//        );
+//
+//        return array(
+//            'success' => false,
+//            'errorMsg' => $e->getMessage(),
+//        );
+//    }
+//}
+//
+///**
+// * Client area output logic handling.
+// *
+// * This function is used to define module specific client area output. It should
+// * return an array consisting of a template file and optional additional
+// * template variables to make available to that template.
+// *
+// * The template file you return can be one of two types:
+// *
+// * * tabOverviewModuleOutputTemplate - The output of the template provided here
+// *   will be displayed as part of the default product/service client area
+// *   product overview page.
+// *
+// * * tabOverviewReplacementTemplate - Alternatively using this option allows you
+// *   to entirely take control of the product/service overview page within the
+// *   client area.
+// *
+// * Whichever option you choose, extra template variables are defined in the same
+// * way. This demonstrates the use of the full replacement.
+// *
+// * Please Note: Using tabOverviewReplacementTemplate means you should display
+// * the standard information such as pricing and billing details in your custom
+// * template or they will not be visible to the end user.
+// *
+// * @param array $params common module parameters
+// *
+// * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
+// *
+// * @return array
+// */
+//function vultr_ClientArea(array $params)
+//{
+//    // Determine the requested action and set service call parameters based on
+//    // the action.
+//    $requestedAction = isset($_REQUEST['customAction']) ? $_REQUEST['customAction'] : '';
+//
+//    if ($requestedAction == 'manage') {
+//        $serviceAction = 'get_usage';
+//        $templateFile = 'template/manage.tpl';
+//    } else {
+//        $serviceAction = 'get_stats';
+//        $templateFile = 'template/overview.tpl';
+//    }
+//
+//    try {
+//        // Call the service's function based on the request action, using the
+//        // values provided by WHMCS in `$params`.
+//        $response = array();
+//
+//        $extraVariable1 = 'abc';
+//        $extraVariable2 = '123';
+//
+//        return array(
+//            'tabOverviewReplacementTemplate' => $templateFile,
+//            'templateVariables' => array(
+//                'extraVariable1' => $extraVariable1,
+//                'extraVariable2' => $extraVariable2,
+//            ),
+//        );
+//    } catch (Exception $e) {
+//        // Record the error in WHMCS's module log.
+//        logModuleCall(
+//            'vultr',
+//            __FUNCTION__,
+//            $params,
+//            $e->getMessage(),
+//            $e->getTraceAsString()
+//        );
+//
+//        // In an error condition, display an error page.
+//        return array(
+//            'tabOverviewReplacementTemplate' => 'error.tpl',
+//            'templateVariables' => array(
+//                'usefulErrorHelper' => $e->getMessage(),
+//            ),
+//        );
+//    }
+//}
 
-/**
- * Additional actions an admin user can invoke.
- *
- * Define additional actions that an admin user can perform for an
- * instance of a product/service.
- *
- * @see vultr_buttonOneFunction()
- *
- * @return array
- */
-function vultr_AdminCustomButtonArray()
-{
-    return array(
-        "Button 1 Display Value" => "buttonOneFunction",
-        "Button 2 Display Value" => "buttonTwoFunction",
-    );
-}
-
-/**
- * Additional actions a client user can invoke.
- *
- * Define additional actions a client user can perform for an instance of a
- * product/service.
- *
- * Any actions you define here will be automatically displayed in the available
- * list of actions within the client area.
- *
- * @return array
- */
-function vultr_ClientAreaCustomButtonArray()
-{
-    return array(
-        "Action 1 Display Value" => "actionOneFunction",
-        "Action 2 Display Value" => "actionTwoFunction",
-    );
-}
-
-/**
- * Custom function for performing an additional action.
- *
- * You can define an unlimited number of custom functions in this way.
- *
- * Similar to all other module call functions, they should either return
- * 'success' or an error message to be displayed.
- *
- * @param array $params common module parameters
- *
- * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
- * @see vultr_AdminCustomButtonArray()
- *
- * @return string "success" or an error message
- */
-function vultr_buttonOneFunction(array $params)
-{
-    try {
-        // Call the service's function, using the values provided by WHMCS in
-        // `$params`.
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'vultr',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
-
-        return $e->getMessage();
-    }
-
-    return 'success';
-}
-
-/**
- * Custom function for performing an additional action.
- *
- * You can define an unlimited number of custom functions in this way.
- *
- * Similar to all other module call functions, they should either return
- * 'success' or an error message to be displayed.
- *
- * @param array $params common module parameters
- *
- * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
- * @see vultr_ClientAreaCustomButtonArray()
- *
- * @return string "success" or an error message
- */
-function vultr_actionOneFunction(array $params)
-{
-    try {
-        // Call the service's function, using the values provided by WHMCS in
-        // `$params`.
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'vultr',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
-
-        return $e->getMessage();
-    }
-
-    return 'success';
-}
-
-/**
- * Admin services tab additional fields.
- *
- * Define additional rows and fields to be displayed in the admin area service
- * information and management page within the clients profile.
- *
- * Supports an unlimited number of additional field labels and content of any
- * type to output.
- *
- * @param array $params common module parameters
- *
- * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
- * @see vultr_AdminServicesTabFieldsSave()
- *
- * @return array
- */
-function vultr_AdminServicesTabFields(array $params)
-{
-    try {
-        // Call the service's function, using the values provided by WHMCS in
-        // `$params`.
-        $response = array();
-
-        // Return an array based on the function's response.
-        return array(
-            'Number of Apples' => (int) $response['numApples'],
-            'Number of Oranges' => (int) $response['numOranges'],
-            'Last Access Date' => date("Y-m-d H:i:s", $response['lastLoginTimestamp']),
-            'Something Editable' => '<input type="hidden" name="vultr_original_uniquefieldname" '
-                . 'value="' . htmlspecialchars($response['textvalue']) . '" />'
-                . '<input type="text" name="vultr_uniquefieldname"'
-                . 'value="' . htmlspecialchars($response['textvalue']) . '" />',
-        );
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'vultr',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
-
-        // In an error condition, simply return no additional fields to display.
-    }
-
-    return array();
-}
 
 /**
  * Execute actions upon save of an instance of a product/service.
@@ -596,119 +783,8 @@ function vultr_AdminServicesTabFields(array $params)
  */
 function vultr_AdminServicesTabFieldsSave(array $params)
 {
-    // Fetch form submission variables.
-    $originalFieldValue = isset($_REQUEST['vultr_original_uniquefieldname'])
-        ? $_REQUEST['vultr_original_uniquefieldname']
-        : '';
-
-    $newFieldValue = isset($_REQUEST['vultr_uniquefieldname'])
-        ? $_REQUEST['vultr_uniquefieldname']
-        : '';
-
-    // Look for a change in value to avoid making unnecessary service calls.
-    if ($originalFieldValue != $newFieldValue) {
-        try {
-            // Call the service's function, using the values provided by WHMCS
-            // in `$params`.
-        } catch (Exception $e) {
-            // Record the error in WHMCS's module log.
-            logModuleCall(
-                'vultr',
-                __FUNCTION__,
-                $params,
-                $e->getMessage(),
-                $e->getTraceAsString()
-            );
-
-            // Otherwise, error conditions are not supported in this operation.
-        }
-    }
-}
-
-/**
- * Perform single sign-on for a given instance of a product/service.
- *
- * Called when single sign-on is requested for an instance of a product/service.
- *
- * When successful, returns a URL to which the user should be redirected.
- *
- * @param array $params common module parameters
- *
- * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
- *
- * @return array
- */
-function vultr_ServiceSingleSignOn(array $params)
-{
-    try {
-        // Call the service's single sign-on token retrieval function, using the
-        // values provided by WHMCS in `$params`.
-        $response = array();
-
-        return array(
-            'success' => true,
-            'redirectTo' => $response['redirectUrl'],
-        );
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'vultr',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
-
-        return array(
-            'success' => false,
-            'errorMsg' => $e->getMessage(),
-        );
-    }
-}
-
-/**
- * Perform single sign-on for a server.
- *
- * Called when single sign-on is requested for a server assigned to the module.
- *
- * This differs from ServiceSingleSignOn in that it relates to a server
- * instance within the admin area, as opposed to a single client instance of a
- * product/service.
- *
- * When successful, returns a URL to which the user should be redirected to.
- *
- * @param array $params common module parameters
- *
- * @see https://developers.whmcs.com/provisioning-modules/module-parameters/
- *
- * @return array
- */
-function vultr_AdminSingleSignOn(array $params)
-{
-    try {
-        // Call the service's single sign-on admin token retrieval function,
-        // using the values provided by WHMCS in `$params`.
-        $response = array();
-
-        return array(
-            'success' => true,
-            'redirectTo' => $response['redirectUrl'],
-        );
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'vultr',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
-
-        return array(
-            'success' => false,
-            'errorMsg' => $e->getMessage(),
-        );
-    }
+    $vultr = new Vultr($params);
+    $vultr->verifyAdminServiceSave();
 }
 
 /**
@@ -743,49 +819,31 @@ function vultr_AdminSingleSignOn(array $params)
  */
 function vultr_ClientArea(array $params)
 {
-    // Determine the requested action and set service call parameters based on
-    // the action.
-    $requestedAction = isset($_REQUEST['customAction']) ? $_REQUEST['customAction'] : '';
+    $render = new Vultrender($params);
+    return $render->render('ClientArea');
+}
 
-    if ($requestedAction == 'manage') {
-        $serviceAction = 'get_usage';
-        $templateFile = 'templates/manage.tpl';
-    } else {
-        $serviceAction = 'get_stats';
-        $templateFile = 'templates/overview.tpl';
-    }
+// Custom functions
+function vultr_start($params)
+{
+    $vultr = new Vultr($params);
+    return $vultr->start();
+}
 
-    try {
-        // Call the service's function based on the request action, using the
-        // values provided by WHMCS in `$params`.
-        $response = array();
+function vultr_reboot($params)
+{
+    $vultr = new Vultr($params);
+    return $vultr->reboot();
+}
 
-        $extraVariable1 = 'abc';
-        $extraVariable2 = '123';
+function vultr_halt($params)
+{
+    $vultr = new Vultr($params);
+    return $vultr->halt();
+}
 
-        return array(
-            'tabOverviewReplacementTemplate' => $templateFile,
-            'templateVariables' => array(
-                'extraVariable1' => $extraVariable1,
-                'extraVariable2' => $extraVariable2,
-            ),
-        );
-    } catch (Exception $e) {
-        // Record the error in WHMCS's module log.
-        logModuleCall(
-            'vultr',
-            __FUNCTION__,
-            $params,
-            $e->getMessage(),
-            $e->getTraceAsString()
-        );
-
-        // In an error condition, display an error page.
-        return array(
-            'tabOverviewReplacementTemplate' => 'error.tpl',
-            'templateVariables' => array(
-                'usefulErrorHelper' => $e->getMessage(),
-            ),
-        );
-    }
+function vultr_reinstall($params)
+{
+    $vultr = new Vultr($params);
+    return $vultr->reinstall();
 }

@@ -6,7 +6,7 @@
         "web host automation platform",
         "provisioning module",
         "server module",
-        "vult"
+        "vultr"
     ],
     "homepage": "http://www.whmcs.com/",
     "license": "MIT",
@@ -24,6 +24,12 @@
         "wiki": "http://docs.whmcs.com/"
     },
     "require-dev": {
-        "phpunit/phpunit": "@stable"
+        "phpunit/phpunit": "@stable",
+        "friendsofphp/php-cs-fixer": "@stable"
+    },
+    "require": {
+        "ext-curl": "*",
+        "guzzlehttp/guzzle": "^7.0",
+        "ext-json": "*"
     }
 }

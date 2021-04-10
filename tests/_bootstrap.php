@@ -22,7 +22,7 @@ require_once __DIR__ . '/../modules/servers/vultr/vultr.php';
  * @param string|array $data
  * @param array $variablesToMask
  *
- * @return void|false
+ * @return void
  */
 function logModuleCall(
     $module,

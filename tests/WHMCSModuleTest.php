@@ -34,7 +34,7 @@ class WHMCSModuleTest extends PHPUnit_Framework_TestCase
      *
      * @return array
      */
-    public function providerFunctionReturnTypes()
+    public function providerFunctionReturnTypes(): array
     {
         return array(
             'Config Options' => array('ConfigOptions', 'array'),
